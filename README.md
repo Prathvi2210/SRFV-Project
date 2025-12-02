@@ -4,14 +4,14 @@ This is a research project for developing a prototype of Spherical Rolling Flyin
 First: Synexens Drivers issue with ROS2.
 
 Second: RPi 4 model B, Ubuntu 20.04, Synexens CS20, Mavros, Ardupilot, ROS Noetic (ROS1)
-RTABmap and TF trees broken in ROS1. Also Synexens CS20 being a new, different sensor, support was minimal and debugging was hard.
+ Synexens CS20 being a new, different sensor, support was minimal and debugging was hard.
 Progress done: Synexens drivers installed and working, feed was visible via ROS Bridge on a custom webapp. Pointcloud not visualized in webapp yet.
 RTABmap built and launched multiple times with different arguments
 MAVROS working. connected with Ardupilot. Need to set stream rate everytime it is launched for rostopic data.
 All rostopics working and visible.
 Issues: Synexens CS20 not having RGB feed, It is a depth camera using TOF technology with near IR light and giving pseudo pointclouds. It is not a lidar, it uses the mirror-lens technology similar to what is found in solid-state lidars. It makes a calculated pointcloud data as output. It doesn't have inbuild pcd output, it calculates them. So the outputs are depth feed and ir feed.
 RTAB map uses Depth and RGB for texture scanning and loop closures. Usinf IR instead of RGB makes the texture scanning difficult. Although Synexens CS20 is ideal for indoor navigation the mapping fails miserably.
-Transform trees are hauntingly broken for ROS Noetic versions. At times I have had to manually initiate 5 dynamic connections between different tree-nodes.
+Transform trees are hauntingly broken for ROS Noetic versions. At times I have had to manually initiate 5 dynamic connections between different tree-nodes. This is due to the synexens ROS1 driber chocking and the ROS -RTAB combo not being able to fix the timestamp issues and not recovering from the fallen TF trees: according to ChatGPT.
 These 2 errors primarily gave rise to issues after launch of RTABmap algo.
 What I achieved till now: Due to headless version of Ubuntu on RPi4, I couldn't visualize the mapping. So I made a provision: Virtual Machine VM on my windows laptop which also had Ubuntu 20.04 desktop and ROS Noetic desktop (with RViz). I set the ROS master and ROS_IP on both devices and launched RTAB on RPi without RViz and started RViz on VM and the data could be visualized there. 
 I added TF display: it works fine, showed the axes. Then I added the pointcloud2 display: when I set topic to /camera1/pointcloud it was showing the pcd output. When I set it to /rtabmap/cloudmap it showed nothing.
