@@ -16,6 +16,14 @@ Install any required dependencies
 >>> rosdep install --from-paths src --ignore-src -r -y
 If rosdep gives any error about missing packages, install them manually using apt
 
+Now what we have is the arm sdk
+Replace the contents of ~/catkin_ws/src/synexens_ros1/ext/sdk
+with:
+include/   ← header files
+lib/       ← .so files
+opencv/    ← if needed
+
+
 Now compile the workspace (Build the packages)
 >>> catkin_make
 
@@ -38,3 +46,6 @@ in another terminal >>> rostopic list
 If you have GUI environment, you can visualize it in RVIZ
 >>> rosrun rviz rviz
 Add displays (e.g. PointCloud2) in rviz to see the topic data
+
+Confirm TF tree is publishing
+>>>rosrun tf view_frames
