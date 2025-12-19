@@ -27,6 +27,12 @@ for permanent sourcing add it to your .bashrc
 Launch:
 >>> roslaunch synexens_ros_driver cs20.launch
 
+Minimal driver (to start capturing data) 
+>>>roslaunch synexens_ros1 driver.launch
+
+Driver with RViz visualiztion:
+>>>roslaunch synexens_ros1 viewer.launch
+
 After launching, check if data is being published
 in another terminal >>> rostopic list 
 If you have GUI environment, you can visualize it in RVIZ
