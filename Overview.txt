@@ -74,3 +74,14 @@ Third try to build this project from the start: RPi4 model B, ubuntu 22.04, ROS2
 ROS installed from deb- documentation
 Intel Realsense issue: Building the sdk from source: kernel patching command not working: fatal: You need to specify a tag name.
 Proceeding manually to skip this part and build the sdk
+
+RPi freezes with all these installations. It should have worked theoretically at its limits with camera sdk, SLAM and ROS but it cant even handle the intel camera in ROS. Keeps freezing and quitting. 
+Tried to use the synexens camera in ROS2 environment, whole installation and ROS integration is mentioned in a file in this repo. This camera software stack was lighter and easier to run. Depth feed and pointcloud are very easily visible in Rviz which is a sign of good integration of camera SDK and ROS. However after trying multiple failed configurations of RTABMap it constantly tried looking for RGB topics which the synexens camera can't provide. For a depth camera that can provide pointcloud data but no RGB, there is no suitable SLAM algorithm apparent to me currently.
+Without RGB feed VSLAM is problematic, there is no case of RTAB running without RGB feed.
+Several other SLAM algorithms can build 3D maps using only depth images or point clouds from sensors like the Synexens CS20:
+ Direct Depth SLAM (DDS)
+ Cartographer ROS (3D Mode)
+ Point-SLAM
+ LiDAR SLAM Options (Point Cloud)
+
+For real time mapping on UAVs, DDS and LiDar based both are not recommended. From the remaining, they both are not able to run on an RPi system, need more power. Atleast cartographer can be started on an RPi with 'aggressive tuning' but again it will not be robust. Need to have a more powerful edge computer for this.
