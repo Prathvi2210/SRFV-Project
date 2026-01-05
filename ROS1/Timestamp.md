@@ -56,3 +56,70 @@ After launching the RTABMap algorithm in ROS1 environment the data not recieved 
 ```
 
 Once diagnosed as a timestamp issue due to the trouble shooting and warnings given in the error itself
+
+Initial assessment: rgbd_odometry and rtabmap nodes are running but not receiving the sensor messages they subscribed to.
+TF frames (depth_camera_link, odom, map) are configured.
+Parameters are set properly (subscribe_depth:=true, subscribe_rgb:=false).
+Indicating an issue with sensor data not the RTAB ros wrapper
+
+Checking timestamps:
+```bash
+srfv@ubuntu:~$ rostopic echo /camera1/depth_info/header
+ seq: 31471 stamp: secs: 0 nsecs: 0 frame_id: "depth_camera_link" ---
+ seq: 31472 stamp: secs: 0 nsecs: 0 frame_id: "depth_camera_link" ---
+ seq: 31473 stamp: secs: 0 nsecs: 0 frame_id: "depth_camera_link" ---
+ seq: 31474 stamp: secs: 0 nsecs: 0 frame_id: "depth_camera_link" ---
+ seq: 31475 stamp: secs: 0 nsecs: 0 frame_id: "depth_camera_link" ---
+ seq: 31476 stamp: secs: 0 nsecs: 0 frame_id: "depth_camera_link" ---
+ seq: 31477 stamp: secs: 0 nsecs: 0 frame_id: "depth_camera_link" ---
+ seq: 31478 stamp: secs: 0 nsecs: 0 frame_id: "depth_camera_link"
+```
+This continued for a long time.
+The /camera1/depth_info topic is publishing, but the header.stamp is always zero (secs: 0, nsecs: 0).
+RTAB-Map (and most ROS packages) use that timestamp to synchronize depth, RGB/IR, and camera_info messages.
+Since the timestamp is invalid, the message synchronizer never finds a match, so RTAB-Map just keeps waiting → Did not receive data since 5 seconds!.
+
+Need to fix this issue in the camera driver.
+Locate the camera timestamp publisher.
+In the synexens_ros1/src directory.
+```bash
+grep -R "CameraInfo" src
+% MY OUTPUT
+ src/SYRosDevice.cpp: mapRosPublisher.insert(std::pair<PUBLISHER_TYPE, ros::Publisher>(DEPTH, m_node.advertise<sensor_msgs::CameraInfo>(sTopicTempName.c_str(), 1)));
+ src/SYRosDevice.cpp: mapRosPublisher.insert(std::pair<PUBLISHER_TYPE, ros::Publisher>(IR, m_node.advertise<sensor_msgs::CameraInfo>(sTopicTempName.c_str(), 1)));
+ src/SYRosDevice.cpp: // mapRosPublisher.insert(std::pair<PUBLISHER_TYPE, ros::Publisher>(RGB, m_node.advertise<sensor_msgs::CameraInfo>(sTopicTempName.c_str(), 1)));
+ src/SYRosDevice.cpp: m_calibrationData.getDepthCameraInfo(m_depthCameraInfo, &intrinsics); src/SYRosDevice.cpp: m_mapRosPublisher[nDeviceID][DEPTH].publish(m_depthCameraInfo);
+ src/SYRosDevice.cpp: m_calibrationData.getDepthCameraInfo(m_depthCameraInfo, &intrinsics); src/SYRosDevice.cpp: m_mapRosPublisher[nDeviceID][DEPTH].publish(m_depthCameraInfo);
+ src/SYRosDevice.cpp: m_calibrationData.getDepthCameraInfo(m_irCameraInfo, &intrinsics); src/SYRosDevice.cpp: m_mapRosPublisher[nDeviceID][IR].publish(m_irCameraInfo);
+ src/SYCalibrationTransformData.cpp:void SYCalibrationTransformData::setCameraInfo(const SYIntrinsics &parameters, sensor_msgs::CameraInfo &camera_info)
+ src/SYCalibrationTransformData.cpp:void SYCalibrationTransformData::getDepthCameraInfo(sensor_msgs::CameraInfo &camera_info, SYIntrinsics *intrinsics)
+ src/SYCalibrationTransformData.cpp: setCameraInfo(intrinsics ? *intrinsics : m_depthCameraIntrinsics, camera_info);
+ src/SYCalibrationTransformData.cpp:void SYCalibrationTransformData::getRgbCameraInfo(sensor_msgs::CameraInfo &camera_info, SYIntrinsics *intrinsics)
+ src/SYCalibrationTransformData.cpp: setCameraInfo(intrinsics ? *intrinsics : m_rgbCameraIntrinsics, camera_info);
+```
+Important lines are those with DepthCameraInfo term
+Open the SYRosDevice.cpp and add the following before the publishing code
+```bash
+nano src/SYRosDevice.cpp
+# Find the section where m_mapRosPublisher[nDeviceID][DEPTH].publish(m_depthCameraInfo); is called.
+# Just before publishing, set the timestamp:
+m_depthCameraInfo.header.stamp = ros::Time::now();
+m_irCameraInfo.header.stamp    = ros::Time::now();
+```
+For example, my code after the editing becomes:
+```bash
+// Before publishing depth info
+m_depthCameraInfo.header.stamp = ros::Time::now();
+m_mapRosPublisher[nDeviceID][DEPTH].publish(m_depthCameraInfo);
+
+// Before publishing IR info
+m_irCameraInfo.header.stamp = ros::Time::now();
+m_mapRosPublisher[nDeviceID][IR].publish(m_irCameraInfo);
+```
+After editing rebuild the packages in the workspace
+```bash
+cd ~/synexens_ros1
+catkin_make
+source devel/setup.bash
+```
+and check for timestamps
