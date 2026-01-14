@@ -60,3 +60,40 @@ Both get their own IPs from your router.
 
 Step 5: ROS Networking Config
 You need to set ROS_MASTER_URI and ROS_IP on both machines.
+On the raspberry Pi (ROS Master)
+```bash
+sudo nano ~/.bashrc
+#add the following lines
+export ROS_MASTER_URI=http://<PI_IP>:11311
+export ROS_IP=<PI_IP>
+```
+
+On the ubuntu VM (Client/Visualizer)
+```bash
+sudo nano ~/.bashrc
+#Add the following lines
+export ROS_MASTER_URI=http://<PI_IP>:11311
+export ROS_IP=<VM_IP>
+```
+
+Reload
+```bash
+source ~/.bashrc
+```
+
+Step 6: Test Connectivity
+On the Pi (start ROS Master)
+```bash
+roscore
+```
+On the VM (check if the topics are listed)
+```bash
+rostopic list
+```
+
+Step 7: Visualize the map
+launch SLAM on the RPi and start rviz on the VM
+Add displays for:
+/camera1/rgb/image_raw (Image display)
+/rtabmap/cloud_map (PointCloud2)
+/rtabmap/odom (Odometry)
