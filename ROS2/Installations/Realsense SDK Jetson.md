@@ -33,4 +33,20 @@ cd librealsense
 ./scripts/setup_udev_rules.sh
 ```
 
-Till this point the commands were general and working 
+Till this point the commands were general and working on Ubuntu kernels. 
+But that stops here, Jetson boards use custom kernels 'tegra' and patching kernels like we do on normal ubuntu computers can break them.
+Here we skip that step and move to build
+```bash
+mkdir build && cd build
+cmake .. -DBUILD_EXAMPLES=true -DCMAKE_BUILD_TYPE=release -DFORCE_RSUSB_BACKEND=true -DBUILD_GRAPHICAL_EXAMPLES=true -DBUILD_WITH_CUDA=true
+
+make -j$(nproc)
+sudo make install
+```
+
+In the provided documentation, -DBUILD_GRAPHICAL_EXAMPLES is not included also -DFORCE_RSUSB_BACKEND is set to false 
+But for visualization on the realsense-viewer it is needed because:
+It forces pure USB userspace backend
+It avoids kernel module dependencies
+
+Now we can proceeed to install the ros wrapper via the git repo and integrate camera output in ROS topics
