@@ -42,4 +42,9 @@ ros2 service list | grep mavros
 #new working launch snippet
 ros2 run mavros mavros_node --ros-args   -p fcu_url:=/dev/ttyACM0:57600   -p target_system:=1   -p config_file:=/opt/ros/humble/share/mavros/launch/apm_config.yaml
 
+#set stream rate
+ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate \
+"{stream_id: 0, message_rate: 200, on_off: true}"
+
+
 
