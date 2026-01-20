@@ -52,9 +52,9 @@ ros2 service list | grep mavros
 ```
 new working launch snippet on jetson orin nano
 ```bash
-ros2 run mavros mavros_node --ros-args
--p fcu_url:=/dev/ttyACM0:57600
--p target_system:=1
+ros2 run mavros mavros_node --ros-args\
+-p fcu_url:=/dev/ttyACM0:57600\
+-p target_system:=1\
 -p config_file:=/opt/ros/humble/share/mavros/launch/apm_config.yaml
 ```
 set stream rate
