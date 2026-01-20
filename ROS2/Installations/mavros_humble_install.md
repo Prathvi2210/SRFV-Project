@@ -62,6 +62,10 @@ set stream rate
 ros2 service call /mavros/set_stream_rate mavros_msgs/srv/StreamRate \
 "{stream_id: 0, message_rate: 200, on_off: true}"
 ```
-For only enabling raw sensors set stream_id: 6
-
+For only enabling IMU set stream_id: 6
+stream_id 10 = EXTRA1 → attitude
+stream_id 0 (ALL)
+stream_id 1 (STATUS)
+stream_id 2 (POSITION)
+stream_id 3 (EXTRA3)
 
