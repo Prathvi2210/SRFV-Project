@@ -50,3 +50,65 @@ It forces pure USB userspace backend
 It avoids kernel module dependencies
 
 Now we can proceeed to install the ros wrapper via the git repo and integrate camera output in ROS topics
+
+XXX Troubleshooting XXX
+To verify camera connections, version comaptibility problems, drivers, USB persmissions etc:
+1) To confirm the camera is physically visible to the OS:
+```bash
+lsusb | grep 8086
+```
+expected>>> Intel Corp. Intel(R) RealSense(TM)
+```bash
+lsusb -t
+```
+expected under USB3 (5000M)
+All driver should have values, shouldn't be empty
+Driver=uvcvideo   (for video)
+Driver=usbhid     (for HID)
+If there is noting in front of 'Driver=' that means the kernel did NOT bind the RealSense interfaces to any driver
+Without this the next command wont recognize the camera
+Driver loading solution here XXXXX lsmod | grep uvcvideo
+
+
+```bash
+v4l2-ctl --list-devices
+```
+expected>>> Intel(R) RealSense(TM) Depth Camera
+  /dev/video*
+
+If any of the above three fail: it is a hardware/cable/port problem. Linux can't see or recognize the camera
+
+2) Apply ROS librealsense udev rules correctly:
+If ROS-binary librealsense is installed, DO NOT use librealsense GitHub udev script
+Verify ROS rules exist
+```bash
+ls /etc/udev/rules.d | grep realsense
+```
+expected>>> 99-realsense-libusb.rules
+If this is missing, reinstall rules via ROS package
+```bash
+sudo apt reinstall ros-humble-librealsense2
+```
+Then reload the udev:
+```bash
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+```
+
+3) Testing SDK before moving to ROS
+```bash
+rs-enumerate-devices
+```
+The camera must be listed here with its properties
+
+4) If realsense-viewer fails, this is failure at the SDK stage
+Verify permissions
+```bash
+ls -l /dev/hidraw*
+```
+expected>>> root plugdev
+If not set:
+```bash
+sudo usermod -aG plugdev,video $USER
+```
+Logout/ Login
