@@ -62,12 +62,54 @@ expected>>> Intel Corp. Intel(R) RealSense(TM)
 lsusb -t
 ```
 expected under USB3 (5000M)
+XXX DRIVERS ISSUE START XXX
 All driver should have values, shouldn't be empty
 Driver=uvcvideo   (for video)
 Driver=usbhid     (for HID)
 If there is noting in front of 'Driver=' that means the kernel did NOT bind the RealSense interfaces to any driver
+Cause: Sometimes jetson will enumerate an USB device without first binding it
 Without this the next command wont recognize the camera
-Driver loading solution here XXXXX lsmod | grep uvcvideo
+First pinpoint why kernel not bound to drivers:
+Check is uvcvideo is loaded
+```bash
+lsmod | grep uvcvideo
+```
+If no output here, we need to manually load it
+```bash
+sudo modprobe uvcvideo
+```
+unplug the camera and replug it and check again
+```bash
+lsusb -t
+```
+Expected output
+```bash
+Driver=uvcvideo
+```
+if lsmod | grep uvcvideo showed output directly come here:
+We need to forcefully unbind and rebind the USB device
+Identify the bus+device path. It will look like: Bus 002 Device 009
+Now unbind it:
+```bash
+echo '2-1.3' | sudo tee /sys/bus/usb/drivers/usb/unbind
+```
+Now rebind it
+```bash
+echo '2-1.3' | sudo tee /sys/bus/usb/drivers/usb/bind
+```
+Now check with
+```bash
+lsusb -t
+```
+If still drivers are not visible proceed to hard reset: shutdown, unplug and wait for 1-2 mins
+
+The drivers should look like
+```bash
+Class=Video, Driver=uvcvideo, 5000M
+Class=Human Interface Device, Driver=usbhid, 5000M
+```
+Only then proceed
+XXX DRIVERS ISSUE END XXX
 
 
 ```bash
