@@ -4,8 +4,9 @@ My specific error started when I installed 'ros-humble-librealsense2' while I al
 This specific action created two competing owners of the same hardware stack causing camera not being recognized in the realsense-viewer and many other errors such as the 'bad optionaal access'
 ros-humble-realsense2 installs librealsense binaries with its own udev rules, own HID expectations and is not built for jetson-specific behaviour.
 This causes confusion in the system often requiring clean slate to proceed again with different approach.
-Cleaning the system is especially hard for source build which are mostly the case in version mismatch cases.
+Cleaning the system is especially hard for source build which are mostly the case in version mismatch errors.
 This set of instructions is to delete all traces on intel software from the device and go back to a system with just ROS installed:
+
 Phase 1- Remove ROS realsense wrapper completely
 ```bash
 cd ~/ros2_ws/src
@@ -30,6 +31,17 @@ sudo apt purge ros-humble-realsense2-camera -y
 sudo apt purge ros-humble-realsense2 -y
 sudo apt autoremove -y
 ```
+In the case if any packages have been held for version pinning, normal apt purge -y is not allowed
+First check the held packages
+```bash
+apt-mark showhold
+```
+Unhold it
+```bash
+sudo apt-mark unhold <pkg_name>
+```
+Now purge and autoremove it
+
 Phase 2- Remove librealsense (full system clean)
 Remove installed libraries and headers
 ```bash
