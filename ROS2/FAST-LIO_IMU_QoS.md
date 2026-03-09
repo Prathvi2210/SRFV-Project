@@ -18,17 +18,15 @@ create_subscription<sensor_msgs::msg::Imu>
 ```
 The block will look like:
 ```C++
-imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
-    imu_topic, 200,
-    std::bind(&LaserMapping::imuHandler, this, _1));
+sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(
+    imu_topic, 10, imu_cbk);
 ```
 Replace it with:
 ```C++
-rclcpp::QoS imu_qos(rclcpp::KeepLast(200));
+rclcpp::QoS imu_qos(rclcpp::KeepLast(10));
 imu_qos.best_effort();
 
-imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
-    imu_topic, imu_qos,
-    std::bind(&LaserMapping::imuHandler, this, _1));
+sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(
+    imu_topic, imu_qos, imu_cbk);
 ```
 Rebuild
