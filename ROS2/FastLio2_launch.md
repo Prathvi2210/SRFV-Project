@@ -138,14 +138,30 @@ ros2 topic echo /lio_odom --once
 ros2 topic hz /camera1/points2
 ros2 topic hz /mavros/imu/data
 ```
-If /lio
+If /lio topics are empty check the whole topic list, there maybe some mismatch in topic names. Example names in my system: 
+Odometry= /Odometry
+Point clouds= /cloud_registered
+              /cloud_registered_body
+              /cloud_effected
+              /Laser_map
+TF= /tf
+    /tf_static
+
+Odometry initial values will be large, this is because; camera_init(map) iis initialized at first valid LiDAR-IMU alignment, no constraints yet(GPS/map/EKF fusion), Z-axis sign depends on IMU mounting + gravity alignment, scale is metric but origin is arbitrary. 
+FAST-LIO odometry is locally consistent, not globally meaningful (yet). So initial large position values is normal for raw LIO output. 
+The velocities in twist will have zero values. FAST-LIO2 focuses on pose+covariance, so it does not publish velocity unless explicitly enabled/ extended. You'll get velocity later via EKF fusion or numerical differentiation.
 6) Visualization:
 ```bash
 rviz2
 ```
-Add:  PointCloud2 → /lio_map
-Odometry → /lio_odom
+Add:  PointCloud2 → cloud_registerd for pcd and laser_map for optional map view
+Odometry 
 TF
+
+FAST-LIO does not publish a full robot TF tree like Nav2, it publishes only what is needed:
+camera_init(map)
+ └── body
+     └── lidar(camera)
 
 # Errors to watch out for:
 No /lio_odom- IMU topic mismatch
@@ -153,4 +169,37 @@ Map drifting- Wrong timestamp/IMU rate
 Segfault at start- scan_line != 1
 "No point received"- Wrong pointcloud topic added
 
-NEXT: gravity alignment tuning, LIO-SAM/Nav2, Hard-sync IMU-CS20
+NEXT: Fuse FAST-LIO + MAVROS in robot_localization, ArduPilot EKF (vision_pose / odom), static gravity alignment tuning, LIO-SAM/Nav2, Hard-sync IMU-CS20
+
+Currently the aalgorithm is working, so next immediate milestone is to make it robust and deploy it for a simple AGV. It should be able to do navigation, then later reusable on a drone. First lets test the jetson+CS20+pixhawk setup then move to drone stage problems of gravity tuning and EKF.
+
+What FAST-LIO gives you:
+Accurate local LiDAR–IMU odometry.
+High-quality dense map.
+Frame: camera_init → body.
+
+What FAST-LIO does not give you:
+A standard map → odom → base_link tree..
+Velocity suitable for planners.
+Integration with Nav.
+That’s exactly what robot_localization is for.
+
+Target architecture currently:
+FAST-LIO2
+ └─ /Odometry (camera_init → body)
+        ↓
+robot_localization (EKF)
+ ├─ publishes /odometry/filtered
+ ├─ publishes TF: map → odom → base_link
+        ↓
+Nav2
+ ├─ AMCL / Localization
+ ├─ Global planner
+ ├─ Local planner
+        ↓
+AGV base controller
+
+Now we need to add robot_localization next and use FAST-LIO /Odometry as the primary source. Produce /odometry/filtered and proper TF tree. This immediately unlocks stable RViz, Nav2 compatibility, Map saving.
+With Nav2 compatible TFs then we can drive the AGV manually, record the /map or /laser_map, save them and validate loop consistency.
+
+Only after this stage can we look at object avoidance, planner tuning, flight specific tuning.
