@@ -1,6 +1,5 @@
 FAST-LIO2 ROS2 instructions:
 #----------------------------------------------------
-Fast_lio ros2
 ```bash
 sudo apt-get install libpcl-dev
 ```
@@ -102,8 +101,104 @@ void Preprocess::process(const sensor_msgs::msg::PointCloud2::SharedPtr& msg)
 ```
 just ensure compilation skips Livox types (NO_LIVOX)
 
-Continue here chat 9
+FastLIO2 supports two LiDAR modes: Livox mode and  Generic LiDAR mode (uses sensor_msgs::msg::PointCloud2)
+It is important to compile only the generic pointcloud2 path
+Introduce a compile flag: NO_LIVOX. Completely exclude Livox: function declarations, callbacks, subscriptions, includes
+In CMakeLists.txt, make sure this exists
+```cmake
+add_definitions(-DNO_LIVOX)
+```
+Now fix preprocess.h
+After guarding Livox include like mentioned above, now we need to guard the Livox function dependencies:
+Find these lines
+```bash
+void process(const livox_ros_driver2::msg::CustomMsg::UniquePtr &msg, PointCloudXYZI::Ptr &pcl_out);
+void avia_handler(const livox_ros_driver2::msg::CustomMsg::UniquePtr &msg);
+```
+Wrap them up like this
+```bash
+#ifndef NO_LIVOX
+void process(const livox_ros_driver2::msg::CustomMsg::UniquePtr &msg, PointCloudXYZI::Ptr &pcl_out);
+void avia_handler(const livox_ros_driver2::msg::CustomMsg::UniquePtr &msg);
+#endif
+```
 
+Fix ros2_ws/src/FAST_LIO_ROS2_/src/preprocess.cpp
+Find these functions definitions
+```C++
+void Preprocess::process(const livox_ros_driver2::msg::CustomMsg::UniquePtr &msg, PointCloudXYZI::Ptr& pcl_out)
+```
+and
+```bash
+void Preprocess::avia_handler(const livox_ros_driver2::msg::CustomMsg::UniquePtr &msg)
+```
+Wrap each entire function like this:
+```bash
+#ifndef NO_LIVOX
+void Preprocess::process(const livox_ros_driver2::msg::CustomMsg::UniquePtr &msg, PointCloudXYZI::Ptr& pcl_out)
+{
+  ...
+}
+
+void Preprocess::avia_handler(const livox_ros_driver2::msg::CustomMsg::UniquePtr &msg)
+{
+  ...
+}
+#endif
+```
+Make sure the whole function is inside the #ifndef NO_LIVOX and #endif
+
+Now, fix the laserMapping.cpp
+1. Guard the Livox include
+   Find
+   ```C++
+   #include <livox_ros_driver2/msg/custom_msg.hpp>
+   ```
+   Change to
+   ```C++
+   #ifndef NO_LIVOX
+   #include <livox_ros_driver2/msg/custom_msg.hpp>
+   #endif
+   ```
+2. Guard Livox callback
+   Find:
+   ```C++
+   void livox_pcl_cbk(const livox_ros_driver2::msg::CustomMsg::UniquePtr msg)
+   ```
+   Wrap it up:
+   ```C++
+   #ifndef NO_LIVOX
+   void livox_pcl_cbk(const livox_ros_driver2::msg::CustomMsg::UniquePtr msg)
+   {
+   ...
+   }
+   #endif
+   ```
+3. Guard Livox subscription member
+   Find this member declaration
+   ```C++
+   rclcpp::Subscription<livox_ros_driver2::msg::CustomMsg>::SharedPtr sub_pcl_livox_;
+   ```
+   Wrap it:
+   ```C++
+   #ifndef NO_LIVOX
+   rclcpp::Subscription<livox_ros_driver2::msg::CustomMsg>::SharedPtr sub_pcl_livox_;
+   #endif
+   ```
+4. Guard Livox subscription creation
+   Find this block (around constructor)
+   ```C++
+   sub_pcl_livox_ = this->create_subscription<livox_ros_driver2::msg::CustomMsg>(
+       lid_topic, 20, livox_pcl_cbk);
+   ```
+   Wrap it:
+   ```C++
+   #ifndef NO_LIVOX
+   sub_pcl_livox_ = this->create_subscription<livox_ros_driver2::msg::CustomMsg>(
+       lid_topic, 20, livox_pcl_cbk);
+   #endif
+   ```
+   
 Optional: the file sets C++17 but then forces C++14 again later
 Replace
 ```bash
@@ -115,6 +210,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -fexceptions")
 ```
 This ensures pure C++ which ROS2 Humble expects
 
+Run a clean build
 ```bash
 export MAKEFLAGS="-j2"
 colcon build --symlink-install --parallel-workers 1 --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release -DROS_EDITION=ROS2 -DHUMBLE_ROS=humble --event-handlers console_cohesion+
@@ -132,12 +228,19 @@ ros2 pkg list | grep fast_lio
 ```
 Expected: fast_lio2
 
+Verify the node exists
+```bash
+ros2 run fast_lio fastlio_mapping --help
+```
+Usage info should be visible here
+
 config and launch fast_lio with map_file_path, dense_publish_en: true
 ```bash
 nano dev/rosWS/install/fast_lio/share/fast_lio/launch/mapping.launch.py 
 ```
+First launch the LiDAR nodes in a terminal, then:
 ```bash
-ros2 launch fast_lio mapping.launch.py config_file:=mid360.yaml
+ros2 launch fast_lio mapping.launch.py config_file:=cs20.yaml
 ```
 take snapshot of pcd
 ```bash
