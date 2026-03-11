@@ -53,9 +53,9 @@ find /opt/ros/humble/share/mavros -name "*.yaml" | grep -E "(apm|px4)"
 
 new working launch snippet on jetson orin nano
 ```bash
-ros2 run mavros mavros_node --ros-args\
--p fcu_url:=/dev/ttyACM0:57600\
--p target_system:=1\
+ros2 run mavros mavros_node --ros-args \
+-p fcu_url:=/dev/ttyACM0:57600 \
+-p target_system:=1 \
 -p config_file:=/opt/ros/humble/share/mavros/launch/apm_config.yaml
 ```
 In ROS 2 parameter overrides must always have a value, an empty value is invalid syntax. If you explicitly want to define gcs_url set it to "".
