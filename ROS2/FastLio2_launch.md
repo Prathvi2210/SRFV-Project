@@ -38,7 +38,13 @@ Confirm pointcloud topic
 ```bash
 ros2 topic echo /camera1_HV0121115C0352/points2 --once
 ```
-Minimal is 10-15 Hz
+Minimal is 10-15 Hz.
+The hz command does not work on this topic. When inspected the topic using: ros2 topic info <topic_name> --verbose, it shows the QoS profile. My system showed Reliability: RELIABLE, History: KEEP_LAST (1), Durability: VOLATILE. This means Queue Depth = 1, publisher only keeps the latest message, so if a subscriber is even slightly late, the message is overwritten.
+Hz command works by subscribing and receiving multiple messages to calculate frequency from timestamps hence the CLI tool misses the messages and never accumulates enough to compute Hz. 
+This issue is with high-bandwidth topics. To confirm that the topic is publishing, run:
+```bash
+ros2 topic bw /camera1_HV0121115C0352/points2
+```
 3) FAST-LIO2 parameter sanity check: edit the FAST-LIO2 config (usually fastlio.yaml):
 ```bash
 nano ~/ros2_ws/src/FAST_LIO_ROS2/config/cs20.yaml
