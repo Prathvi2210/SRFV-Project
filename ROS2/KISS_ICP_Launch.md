@@ -56,9 +56,14 @@ base_frame:=base_link => change this according to your system.
 deskew:=false => becasue CS20 sensor doesn't include per-point timstamps, if not specified it will start then give warning and disable on its own.
 visualize:=true => put true if you want to use RViz. 
   Add these displays:  
-  Display Type       Topic             What you'll see
-  Odometry           /kiss/odometry    Position + orientation arrow
-  PointCloud2        /kiss/local_map   Built map of environment
-  PointCloud2        /kiss/frame       Current scan frame
-  PointCloud2        /kiss/keypoints   Feature points used for ICP
-  TF                 —                 Coordinate frames
+| Display Type   |   Topic           |  What you'll see              |
+|----------------|-------------------|-------------------------------|
+| Odometry       |   /kiss/odometry  |  Position + orientation arrow |
+| PointCloud2    |   /kiss/local_map |  Built map of environment     |
+| PointCloud2    |   /kiss/frame     |  Current scan frame           |
+| PointCloud2    |   /kiss/keypoints |  Feature points used for ICP  |
+| TF             |    —              |  Coordinate frames            |
+
+RViz's odometry has a keep parameter. Set it to something like 200 in the display properties and it will draw a trail of arrows showing the path history.
+Fixed Frame -> odom_lidar
+
