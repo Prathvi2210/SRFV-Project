@@ -4,7 +4,7 @@ Contents:
 ```bash
 kiss_icp_node:
   ros__parameters:
-    base_frame: "depth_camera_link"
+    base_frame: "camera_base"
     lidar_odom_frame: "odom_lidar"
     publish_odom_tf: true
     invert_odom_tf: false
